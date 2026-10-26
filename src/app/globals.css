@@ -14,6 +14,11 @@ body {
     linear-gradient(160deg, #f8fffa 0%, #e4f7ea 55%, #d3f1dc 100%);
   background-size: 96px 96px, auto;
 }
+@media (max-width: 640px) {
+  .bg-scene {
+    background-size: 48px 48px, auto;
+  }
+}
 .bg-scene::before, .bg-scene::after {
   content: ""; position: absolute; border-radius: 9999px; filter: blur(80px); opacity: .55;
 }

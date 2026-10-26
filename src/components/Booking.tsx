@@ -5,7 +5,7 @@ import { CLOSE_HOUR, COURTS, HOLD_MINUTES, OPEN_HOUR, PRICE_PER_HOUR, courtName,
 
 type Cell = "held" | "booked";
 type Status = Record<number, Record<number, Cell>>;
-interface Hold { id: string; expiresAt: number; date: string; court: number; hour: number }
+interface Hold { id: string; expiresAt: number; date: string; court: number; hour: number; duration?: number }
 
 const HOURS = Array.from({ length: CLOSE_HOUR - OPEN_HOUR }, (_, i) => OPEN_HOUR + i);
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -21,6 +21,7 @@ export default function Booking() {
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [duration, setDuration] = useState(1);
 
   const load = useCallback(async () => {
     const r = await fetch(`/api/availability?date=${date}`, { cache: "no-store" });
@@ -52,12 +53,13 @@ export default function Booking() {
   async function pick(hour: number) {
     setError("");
     const r = await fetch("/api/hold", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, court, hour, holdId: hold?.id }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date, court, hour, holdId: hold?.id, duration }),
     });
     const j = await r.json();
-    if (!r.ok) { setHold(null); setError(j.error); load(); return; }
-    setHold({ id: j.id, expiresAt: j.expiresAt, date, court, hour });
+    if (!r.ok) { setHold(null); setError(j.error ?? "Could not book."); load(); return; }
+    setHold({ id: j.id, expiresAt: j.expiresAt, date, court, hour, duration: j.duration ?? 1 });
     load();
   }
 
@@ -114,6 +116,17 @@ export default function Booking() {
               <span className="text-sm text-pine/60">Booked by the hour</span>
             </>
           )}
+          <div className="ml-4 flex items-center gap-2">
+            <label className="text-xs text-pine/60">Duration (hrs)</label>
+            <input
+              type="number"
+              min={1}
+              max={24}
+              value={duration}
+              onChange={(e) => setDuration(Number(e.target.value))}
+              className="rounded-xl border border-white/80 bg-white/70 px-3 py-2 text-white placeholder:text-white/40"
+            />
+          </div>
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">

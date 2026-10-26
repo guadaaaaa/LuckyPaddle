@@ -7,6 +7,9 @@ export const CLOSE_HOUR = 22; // last booking starts at 21:00
 export const PRICE_PER_HOUR = 400; // PHP
 export const HOLD_MINUTES = 10;
 
+/** Maximum block hours a player can book at once */
+export const MAX_DURATION = 2;
+
 /**
  * Photos. Only the hero is a verified free Unsplash photo (Aleksander Saks, Unsplash License).
  * Add more by pasting any image URL; empty strings show a green placeholder.

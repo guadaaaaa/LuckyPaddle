@@ -14,7 +14,7 @@ export default function Home() {
         <a href="#book" className="rounded-full bg-pine px-5 py-2 text-sm font-medium text-white">Book a court</a>
       </header>
 
-      <section className="mx-auto grid max-w-6xl items-center gap-10 px-5 pb-16 pt-14 lg:grid-cols-2">
+      <section className="mx-auto grid max-w-6xl items-center gap-10 px-5 pb-16 pt-10 lg:pt-14 lg:grid-cols-2">
         <div className="relative">
           <Clover className="pointer-events-none absolute -left-8 -top-10 h-40 w-40 text-leaf/10" />
           <p className="relative mb-5 inline-flex items-center gap-2 rounded-full bg-white/60 px-4 py-1.5 text-sm font-medium text-pine/80">

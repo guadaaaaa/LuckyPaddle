@@ -1,9 +1,25 @@
-import { COURTS, HOLD_MINUTES, OPEN_HOUR, CLOSE_HOUR, PRICE_PER_HOUR } from "./config";
+import { COURTS, HOLD_MINUTES, OPEN_HOUR, CLOSE_HOUR } from "./config";
 
 export type Status = "held" | "pending" | "paid";
+
+export type RateTier = { maxHours: number; price: number };
+
+export const RATES: RateTier[] = [
+  { maxHours: 1, price: 400 },
+  { maxHours: 2, price: 700 },
+  { maxHours: 24, price: 3000 },
+];
+
+export function getPrice(duration: number): number {
+  for (const tier of RATES) {
+    if (duration <= tier.maxHours) return tier.price;
+  }
+  return RATES[RATES.length - 1].price;
+}
 export interface Booking {
   id: string; date: string; court: number; hour: number; amount: number;
-  status: Status; expiresAt: number; createdAt: number; name?: string; email?: string; phone?: string;
+  status: Status; expiresAt: number; createdAt: number; duration?: number;
+  name?: string; email?: string; phone?: string;
 }
 
 /**
@@ -17,9 +33,9 @@ const db = (g.__bookings ??= new Map<string, Booking>());
 const alive = (b: Booking) => b.status === "paid" || b.expiresAt > Date.now();
 const sweep = () => { for (const [id, b] of db) if (!alive(b)) db.delete(id); };
 
-export function slotTaken(date: string, court: number, hour: number) {
+export function slotTaken(date: string, court: number, hour: number, duration: number = 1) {
   sweep();
-  return [...db.values()].some((b) => b.date === date && b.court === court && b.hour === hour);
+  return [...db.values()].some((b) => b.date === date && b.court === court && b.hour < hour + duration && b.hour + (b.duration ?? 1) > hour);
 }
 
 export function dayStatus(date: string) {
@@ -32,11 +48,13 @@ export function dayStatus(date: string) {
   return out;
 }
 
-export function createHold(date: string, court: number, hour: number): Booking | null {
-  if (slotTaken(date, court, hour)) return null;
+export function createHold(date: string, court: number, hour: number, duration: number = 1): Booking | null {
+  if (slotTaken(date, court, hour, duration)) return null;
+  const amount = getPrice(duration);
   const b: Booking = {
-    id: crypto.randomUUID(), date, court, hour, amount: PRICE_PER_HOUR,
+    id: crypto.randomUUID(), date, court, hour, amount,
     status: "held", createdAt: Date.now(), expiresAt: Date.now() + HOLD_MINUTES * 60_000,
+    duration,
   };
   db.set(b.id, b);
   return b;
