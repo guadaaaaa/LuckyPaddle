@@ -12,6 +12,11 @@ export async function POST(req: NextRequest) {
   if (!hold || hold.status !== "held")
     return NextResponse.json({ error: "Your 10-minute hold has expired. Pick the slot again." }, { status: 410 });
 
+  const { getInventory } = await import("@/lib/store");
+  const inv = getInventory();
+  if ((Number(paddles) || 0) > inv.paddles || (Number(balls) || 0) > inv.balls) {
+    return NextResponse.json({ error: "Not enough paddles or balls in stock." }, { status: 409 });
+  }
   const extra = (Number(paddles) || 0) * 100 + (Number(balls) || 0) * 100;
   if (extra > 0) {
     hold.amount += extra;

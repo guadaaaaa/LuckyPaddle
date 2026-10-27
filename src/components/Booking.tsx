@@ -214,7 +214,7 @@ export default function Booking() {
                 <div className="flex items-center gap-2">
                   <button onClick={() => setAddPaddles(Math.max(0, addPaddles - 1))} className="rounded-full bg-white/10 px-2 py-1 text-xs">-</button>
                   <span className="w-6 text-center text-sm">{addPaddles}</span>
-                  <button onClick={() => setAddPaddles(addPaddles + 1)} className="rounded-full bg-white/10 px-2 py-1 text-xs">+</button>
+                  <button onClick={() => setAddPaddles(Math.min(4, addPaddles + 1))} className="rounded-full bg-white/10 px-2 py-1 text-xs">+</button>
                 </div>
               </div>
               <div className="mt-3 flex items-center justify-between">
@@ -225,7 +225,7 @@ export default function Booking() {
                 <div className="flex items-center gap-2">
                   <button onClick={() => setAddBalls(Math.max(0, addBalls - 1))} className="rounded-full bg-white/10 px-2 py-1 text-xs">-</button>
                   <span className="w-6 text-center text-sm">{addBalls}</span>
-                  <button onClick={() => setAddBalls(addBalls + 1)} className="rounded-full bg-white/10 px-2 py-1 text-xs">+</button>
+                  <button onClick={() => setAddBalls(Math.min(10, addBalls + 1))} className="rounded-full bg-white/10 px-2 py-1 text-xs">+</button>
                 </div>
               </div>
               {(extras > 0) && <div className="mt-3 text-xs text-white/70">Extras: {peso(extras)}</div>}
