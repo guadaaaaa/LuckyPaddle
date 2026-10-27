@@ -170,16 +170,15 @@ export default function Booking() {
                     : `border-white/70 ${hl || "bg-white/70"} hover:-translate-y-0.5 hover:bg-white`}`}>
                 <div className="font-display font-semibold">{hourLabel(h)}</div>
                 <div className="text-xs">
-                  {sel ? "Selected" : past(h) ? "Passed" : s === "booked" ? "Booked" : s === "held" ? "On hold" : peso(h < 15 ? 500 : 600)}
+                  {sel ? "Selected" : past(h) ? "Passed" : s === "booked" ? "Booked" : s === "held" ? "On hold" : peso(h < 17 ? 500 : 600)}
                 </div>
               </button>
             );
           })}
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-pine/70">
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-400"></span> 8AM–12PM ₱500</span>
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-400"></span> 12PM–3PM ₱500</span>
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400"></span> 3PM–1AM ₱600</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-400"></span> 8AM–5PM ₱500</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400"></span> 5PM–1AM ₱600</span>
         </div>
       </div>
 

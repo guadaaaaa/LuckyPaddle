@@ -8,14 +8,12 @@ export type RateTier = { maxHours: number; price: number };
 export type TimeRate = { start: number; end: number; price: number };
 
 export const RATES: RateTier[] = [
-  { maxHours: 1, price: 500 },
-  { maxHours: 2, price: 1000 },
-  { maxHours: 24, price: 6000 },
+  { maxHours: 24, price: 500 },
 ];
 
 export const TIME_RATES: TimeRate[] = [
-  { start: 8, end: 15, price: 500 }, // 8:00 AM - 3:00 PM
-  { start: 15, end: 25, price: 600 }, // 3:00 PM - 1:00 AM
+  { start: 8, end: 17, price: 500 }, // 8:00 AM - 5:00 PM
+  { start: 17, end: 25, price: 600 }, // 5:00 PM - 1:00 AM
 ];
 
 function getRateForHour(h: number): number {

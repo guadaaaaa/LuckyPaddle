@@ -139,7 +139,7 @@ export default function RateEditor() {
       <section className="mt-8">
         <h1 className="font-display text-3xl font-bold">Court rates</h1>
         <p className="mt-1 text-pine/65">
-          Set the price for each block length. The first tier that fits the booking wins.
+          Time-based rates: 8:00 AM – 5:00 PM ₱500, 5:00 PM – 1:00 AM ₱600.
         </p>
       </section>
 
