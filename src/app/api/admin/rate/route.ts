@@ -18,6 +18,10 @@ export async function POST(req: NextRequest) {
       .map((t: any) => ({ start: Number(t.start), end: Number(t.end), price: Number(t.price) }))
       .filter((t: any) => Number.isFinite(t.start) && Number.isFinite(t.end) && Number.isFinite(t.price) && t.price >= 0);
     const timeRates = await setTimeRates(cleaned);
+    // Also set module-level for immediate use
+    const { TIME_RATES } = await import("@/lib/store");
+    (TIME_RATES as any).splice?.(0, (TIME_RATES as any).length);
+    for (const r of timeRates) (TIME_RATES as any).push?.(r);
     const rates = await getRates();
     return NextResponse.json({ rates, timeRates });
   }

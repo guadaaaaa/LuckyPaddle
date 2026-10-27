@@ -89,6 +89,9 @@ export async function setRates(rates: RateTier[]): Promise<RateTier[]> {
 }
 
 function getRateForHour(h: number): number {
+  if (!timeRatesCache) {
+    getTimeRates().catch(() => {});
+  }
   const rates = timeRatesCache ?? TIME_RATES ?? DEFAULT_TIME_RATES;
   for (const w of rates) {
     if (h >= w.start && h < w.end) return w.price;
@@ -97,6 +100,9 @@ function getRateForHour(h: number): number {
 }
 
 export function getPriceForRange(fromHour: number, toHour: number): number {
+  if (!timeRatesCache) {
+    getTimeRates().catch(() => {});
+  }
   let total = 0;
   for (let h = fromHour; h < toHour; h++) {
     if (h < 0) continue;
