@@ -1,5 +1,5 @@
 import { COURTS, HOLD_MINUTES, OPEN_HOUR, CLOSE_HOUR } from "./config";
-import { redis } from "./redis";
+import { supabase } from "./supabase";
 
 export type Block = { id: string; date: string; court: number; hour: number; duration: number; reason?: string; createdAt: number };
 export type Inventory = { paddles: number; balls: number };
@@ -9,38 +9,48 @@ export type RateTier = { maxHours: number; price: number };
 export type TimeRate = { start: number; end: number; price: number };
 
 export const DEFAULT_TIME_RATES: TimeRate[] = [
-  { start: 8, end: 17, price: 500 }, // 8:00 AM - 5:00 PM
-  { start: 17, end: 25, price: 600 }, // 5:00 PM - 1:00 AM
+  { start: 8, end: 17, price: 500 },
+  { start: 17, end: 25, price: 600 },
 ];
 
 export const DEFAULT_RATES: RateTier[] = [
   { maxHours: 24, price: 500 },
 ];
 
-// Keep exports for backward compatibility
 export let TIME_RATES: TimeRate[] = [...DEFAULT_TIME_RATES];
 export let RATES: RateTier[] = [...DEFAULT_RATES];
 
 let timeRatesCache: TimeRate[] | null = null;
 let ratesCache: RateTier[] | null = null;
 
+async function getSetting<T>(key: string, def: T): Promise<T> {
+  try {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return def;
+    const { data, error } = await supabase.from("app_settings").select("value").eq("key", key).maybeSingle();
+    if (error) return def;
+    if (data?.value === undefined || data?.value === null) return def;
+    return data.value as T;
+  } catch {
+    return def;
+  }
+}
+
+async function setSetting<T>(key: string, value: T): Promise<void> {
+  try {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return;
+    await supabase.from("app_settings").upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  } catch {}
+}
+
 export async function getTimeRates(): Promise<TimeRate[]> {
   if (timeRatesCache) {
     TIME_RATES = timeRatesCache;
     return timeRatesCache;
   }
-  try {
-    if (redis && typeof (redis as any).get === "function") {
-      const saved = await redis.get<TimeRate[]>("lp:timeRates");
-      if (saved && Array.isArray(saved) && saved.length > 0) {
-        timeRatesCache = [...saved].sort((a, b) => a.start - b.start);
-      } else {
-        timeRatesCache = [...DEFAULT_TIME_RATES];
-      }
-    } else {
-      timeRatesCache = [...DEFAULT_TIME_RATES];
-    }
-  } catch {
+  const saved = await getSetting<TimeRate[]>("timeRates", DEFAULT_TIME_RATES);
+  if (Array.isArray(saved) && saved.length > 0) {
+    timeRatesCache = [...saved].sort((a, b) => a.start - b.start);
+  } else {
     timeRatesCache = [...DEFAULT_TIME_RATES];
   }
   TIME_RATES = timeRatesCache;
@@ -51,11 +61,7 @@ export async function setTimeRates(rates: TimeRate[]): Promise<TimeRate[]> {
   const sorted = [...rates].sort((a, b) => a.start - b.start);
   timeRatesCache = sorted;
   TIME_RATES = sorted;
-  try {
-    if (redis && typeof (redis as any).set === "function") {
-      await redis.set("lp:timeRates", sorted);
-    }
-  } catch {}
+  await setSetting("timeRates", sorted);
   return sorted;
 }
 
@@ -64,18 +70,10 @@ export async function getRates(): Promise<RateTier[]> {
     RATES = ratesCache;
     return ratesCache;
   }
-  try {
-    if (redis && typeof (redis as any).get === "function") {
-      const saved = await redis.get<RateTier[]>("lp:rates");
-      if (saved && Array.isArray(saved) && saved.length > 0) {
-        ratesCache = [...saved].sort((a, b) => a.maxHours - b.maxHours);
-      } else {
-        ratesCache = [...DEFAULT_RATES];
-      }
-    } else {
-      ratesCache = [...DEFAULT_RATES];
-    }
-  } catch {
+  const saved = await getSetting<RateTier[]>("rates", DEFAULT_RATES);
+  if (Array.isArray(saved) && saved.length > 0) {
+    ratesCache = [...saved].sort((a, b) => a.maxHours - b.maxHours);
+  } else {
     ratesCache = [...DEFAULT_RATES];
   }
   RATES = ratesCache;
@@ -86,11 +84,7 @@ export async function setRates(rates: RateTier[]): Promise<RateTier[]> {
   const sorted = [...rates].sort((a, b) => a.maxHours - b.maxHours);
   ratesCache = sorted;
   RATES = sorted;
-  try {
-    if (redis && typeof (redis as any).set === "function") {
-      await redis.set("lp:rates", sorted);
-    }
-  } catch {}
+  await setSetting("rates", sorted);
   return sorted;
 }
 
