@@ -110,6 +110,9 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
+          <a href="/admin/inventory" className="rounded-full px-3 py-2 text-sm text-pine/70 transition hover:bg-white/60 hover:text-pine">Inventory</a>
+          <a href="/admin/block" className="rounded-full px-3 py-2 text-sm text-pine/70 transition hover:bg-white/60 hover:text-pine">Block time</a>
+          <a href="/admin/rate" className="rounded-full px-3 py-2 text-sm text-pine/70 transition hover:bg-white/60 hover:text-pine">Court rates</a>
           <a href="/" className="rounded-full px-3 py-2 text-sm text-pine/70 transition hover:bg-white/60 hover:text-pine">View site</a>
           <button onClick={signOut} className="rounded-full bg-pine px-4 py-2 text-sm font-medium text-white transition hover:bg-court">
             Sign out

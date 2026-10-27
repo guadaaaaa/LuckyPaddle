@@ -1,25 +1,49 @@
 import { COURTS, HOLD_MINUTES, OPEN_HOUR, CLOSE_HOUR } from "./config";
 
-export type Status = "held" | "pending" | "paid";
+export type Block = { id: string; date: string; court: number; hour: number; duration: number; reason?: string; createdAt: number };
+export type Inventory = { paddles: number; balls: number };
 
+export type Status = "held" | "pending" | "paid";
 export type RateTier = { maxHours: number; price: number };
+export type TimeRate = { start: number; end: number; price: number };
 
 export const RATES: RateTier[] = [
-  { maxHours: 1, price: 400 },
-  { maxHours: 2, price: 700 },
-  { maxHours: 24, price: 3000 },
+  { maxHours: 1, price: 500 },
+  { maxHours: 2, price: 1000 },
+  { maxHours: 24, price: 6000 },
 ];
 
-export function getPrice(duration: number): number {
-  for (const tier of RATES) {
-    if (duration <= tier.maxHours) return tier.price;
+export const TIME_RATES: TimeRate[] = [
+  { start: 8, end: 15, price: 500 }, // 8:00 AM - 3:00 PM
+  { start: 15, end: 25, price: 600 }, // 3:00 PM - 1:00 AM
+];
+
+function getRateForHour(h: number): number {
+  for (const w of TIME_RATES) {
+    if (h >= w.start && h < w.end) return w.price;
   }
-  return RATES[RATES.length - 1].price;
+  return 600;
 }
+
+export function getPriceForRange(fromHour: number, toHour: number): number {
+  let total = 0;
+  for (let h = fromHour; h < toHour; h++) {
+    if (h < 0) continue;
+    total += getRateForHour(h);
+  }
+  return total;
+}
+
+export function getPrice(duration: number): number {
+  return getPriceForRange(0, duration);
+}
+
 export interface Booking {
   id: string; date: string; court: number; hour: number; amount: number;
   status: Status; expiresAt: number; createdAt: number; duration?: number;
   name?: string; email?: string; phone?: string;
+  paddles?: number;
+  balls?: number;
 }
 
 /**
@@ -27,14 +51,18 @@ export interface Booking {
  * functions do not share memory. Before going live, replace these functions with
  * a database (Upstash Redis, Vercel KV, Supabase, Neon...). Keep the same signatures.
  */
-const g = globalThis as unknown as { __bookings?: Map<string, Booking> };
+const g = globalThis as unknown as { __bookings?: Map<string, Booking>; __blocks?: Block[]; __inventory?: Inventory };
 const db = (g.__bookings ??= new Map<string, Booking>());
+const blocks = (g.__blocks ??= []);
+if (!g.__inventory) g.__inventory = { paddles: 4, balls: 10 };
+const inventory = g.__inventory;
 
 const alive = (b: Booking) => b.status === "paid" || b.expiresAt > Date.now();
 const sweep = () => { for (const [id, b] of db) if (!alive(b)) db.delete(id); };
 
 export function slotTaken(date: string, court: number, hour: number, duration: number = 1) {
   sweep();
+  if (isBlocked(date, court, hour, duration)) return true;
   return [...db.values()].some((b) => b.date === date && b.court === court && b.hour < hour + duration && b.hour + (b.duration ?? 1) > hour);
 }
 
@@ -43,14 +71,21 @@ export function dayStatus(date: string) {
   const out: Record<number, Record<number, "held" | "booked">> = {};
   for (const b of db.values()) {
     if (b.date !== date) continue;
-    (out[b.court] ??= {})[b.hour] = b.status === "paid" ? "booked" : "held";
+    const cell = b.status === "paid" ? "booked" : "held";
+    const span = b.duration ?? 1;
+    for (let i = 0; i < span; i++) {
+      const h = b.hour + i;
+      if (h >= CLOSE_HOUR) break;
+      const court = (out[b.court] ??= {});
+      if (court[h] !== "booked") court[h] = cell;
+    }
   }
   return out;
 }
 
 export function createHold(date: string, court: number, hour: number, duration: number = 1): Booking | null {
   if (slotTaken(date, court, hour, duration)) return null;
-  const amount = getPrice(duration);
+  const amount = getPriceForRange(hour, hour + duration);
   const b: Booking = {
     id: crypto.randomUUID(), date, court, hour, amount,
     status: "held", createdAt: Date.now(), expiresAt: Date.now() + HOLD_MINUTES * 60_000,
@@ -68,6 +103,36 @@ export function listBookings() {
   return [...db.values()].sort(
     (a, b) => b.date.localeCompare(a.date) || b.hour - a.hour || b.createdAt - a.createdAt,
   );
+}
+
+export function isBlocked(date: string, court: number, hour: number, duration: number = 1) {
+  return blocks.some((blk) => blk.date === date && blk.court === court && hour < blk.hour + blk.duration && hour + duration > blk.hour);
+}
+
+export function listBlocks() {
+  return [...blocks].sort((a, b) => a.date.localeCompare(b.date) || a.hour - b.hour);
+}
+
+export function addBlock(date: string, court: number, hour: number, duration: number = 1, reason?: string) {
+  const id = crypto.randomUUID();
+  blocks.push({ id, date, court, hour, duration, reason, createdAt: Date.now() });
+  return blocks[blocks.length - 1];
+}
+
+export function removeBlock(id: string) {
+  const idx = blocks.findIndex((b) => b.id === id);
+  if (idx >= 0) blocks.splice(idx, 1);
+  return idx >= 0;
+}
+
+export function getInventory() {
+  return { paddles: inventory.paddles, balls: inventory.balls };
+}
+
+export function setInventory(next: Partial<Inventory>) {
+  if (typeof next.paddles === "number" && next.paddles >= 0) inventory.paddles = Math.floor(next.paddles);
+  if (typeof next.balls === "number" && next.balls >= 0) inventory.balls = Math.floor(next.balls);
+  return getInventory();
 }
 
 export function releaseHold(id: string) { const b = db.get(id); if (b?.status === "held") db.delete(id); }
