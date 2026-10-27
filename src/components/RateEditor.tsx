@@ -148,7 +148,7 @@ export default function RateEditor() {
 
       <div className="glass mt-6 rounded-3xl p-5 sm:p-6">
         <h2 className="font-display text-xl font-semibold">Time-based rates</h2>
-        <p className="mt-1 text-sm text-pine/65">Prices by hour range (24h clock). 8–15 = 8AM–3PM, 15–25 = 3PM–1AM.</p>
+        <p className="mt-1 text-sm text-pine/65">Prices by hour range (24h clock).</p>
         {loading ? (
           <p className="mt-3 text-sm text-pine/60">Loading rates...</p>
         ) : (
